@@ -3,8 +3,7 @@ document.addEventListener('DOMContentLoaded', SetupCanvas);
 
 // Reference to the canvas element
 let canvas;
-// Context provides functions used for drawing and 
-// working with Canvas
+// Context provides functions used for drawing and working with Canvas
 let c;
  
 // Used to monitor whether paddles and ball are
@@ -18,7 +17,11 @@ let DIRECTION = {
 };
 
 let player;
-let aiPlayer;
+
+let bullet;
+const bullets = [];
+
+// let aiPlayer;
 let ball;
 // Monitors whether ball is currently in play
 let running = false;
@@ -36,6 +39,7 @@ function SetupCanvas(){
 
     // Reference to the canvas element
     canvas = document.querySelector("canvas");
+
     // Context provides functions used for drawing and 
     // working with Canvas
     c = canvas.getContext('2d');
@@ -47,17 +51,20 @@ function SetupCanvas(){
     document.addEventListener('keydown', MovePlayerPaddle);
     document.addEventListener('keyup', StopPlayerPaddle);
 
+    document.addEventListener('click', (event)=>{
+        // console.log(event);
+
+        ShootIt(event);
+
+    });
 
     // Draw player
-    player = new Player(canvas.width / 2,'red');
-    // player.draw();
-
+    player = new Player((canvas.width/2), 'blue');
     Draw();
 }
-
 class Player {
 
-    constructor(x, color){
+    constructor(x=(canvas.width/2), color){
 
         this.radius = 30;
         this.color = color;
@@ -82,14 +89,42 @@ class Player {
         c.fill();
 
         // debug
-        console.log(this);
+        // console.log(this);
         console.log("player created")
     }
 }
+class Bullet {
 
-// const x = canvas.width / 2;
-// const y = canvas.height / 2;
+    constructor(x, y, radius, color, velocity){
 
+        this.radius = radius;
+        this.color = color;
+
+        // Center the player
+        this.x = x;
+        // place player half off the bottom screen
+        this.y = y;
+
+        // Defines movement direction of paddles
+        this.move = DIRECTION.STOPPED;
+        // Defines how quickly paddles can be moved
+        this.velocity = velocity;
+    }
+    draw(){
+        c.beginPath();
+        c.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false);
+        c.fillStyle = this.color;
+        c.fill();
+
+        // debugs
+        // console.log(this);
+        console.log("Bullet created")
+    }
+    update(){
+        this.x = this.x + this.velocity.x;
+        this.y = this.y + this.velocity.y;
+    }
+}
 function Draw(){
 
     // Clear the canvas
@@ -107,7 +142,8 @@ function Draw(){
 
     // Draw Paddles
     player.draw();
-    
+    // bullet.draw();
+
     // Declare a winner
     if(player.score === 5){
         c.fillText("Player Wins", canvas.width/2, 100);
@@ -132,6 +168,8 @@ function Update(){
     } else if(player.move === DIRECTION.LEFT){
         player.x -= player.speed;
     }
+    bullet.update();
+
 }
 // If we are not in play mode start the game running and loop
 // through updates and draws till the end of the game
@@ -149,32 +187,76 @@ function MovePlayerPaddle(key){
     if(key.keyCode === 40 || key.keyCode === 83) player.move = DIRECTION.DOWN;
 
     // Handle left arrow and a input
-    if(key.keyCode === 37 || key.keyCode === 65) player.move = DIRECTION.LEFT;
+    if(key.keyCode === 37 || key.keyCode === 65) player.move = DIRECTION.LEFT
     // Handle right arrow and d input
     if(key.keyCode === 39 || key.keyCode === 68) player.move = DIRECTION.RIGHT;
     
+    // Handle space bar for shooting
+    if(key.keyCode === 32) {
+        console.log("shoot!!");
+    }
     // handle scape as game over
     if(key.keyCode === 27) gameOver = true;
 }
- 
+ function ShootIt(event){
+
+    const dy = event.clientY-player.y;
+    const dx = event.clientX-player.x;
+    
+    // const angle = Math.atan2(
+    //     (event.clientY-player.y),
+    //     (event.clientX-player.x)
+    // );
+
+    // const angle = Math.atan2(dy, dx) * 180  / Math.PI;
+    const angle = Math.atan2(dy, dx);
+
+    console.log(angle);
+    const velocity = {
+        x: Math.cos(angle),
+        y: Math.sin(angle)
+    }
+    bullet = new Bullet(player.x, player.y, 1, 'white', velocity);
+    bullets.push(bullet);
+    bullet.draw();
+
+    console.log(bullets);
+}
 function StopPlayerPaddle(evt){
     player.move = DIRECTION.STOPPED;
 }
-
 // Loops constantly updating position of assets 
 // while drawing them
 function GameLoop(){
+
     console.log("GameLoop.enter");
-    Update();
-    Draw();
+
+
+    //Update();
+    //Draw();
     // Keep looping
     if(!gameOver) requestAnimationFrame(GameLoop);
+    // if(!gameOver) requestAnimationFrame(SetRateVelocity);
+    
+
+    bullets.forEach(projectile => {
+        projectile.update();
+        projectile.draw();
+    });
+
 
     if(gameOver){
-        c.font = '20px Arial';
+        c.font = '50px Arial';
         c.textAlign = 'center';
         c.fillStyle = "red";
         c.fillText("Game Over!!!", (canvas.width/2), (canvas.height/2));
     }
-
+}
+// just to slow dows frame for better debuggin, 
+// however back to 60fps in production
+var fps = 60
+function SetRateVelocity(timestamp){
+    setTimeout(function(){ //throttle requestAnimationFrame to 20fps
+        requestAnimationFrame(GameLoop)
+    }, 1000/fps)
 }
