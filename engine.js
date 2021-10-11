@@ -24,6 +24,11 @@ const bullets = [];
 let enemy;
 const enemies = [];
 
+let loveTile;
+const loveTiles = [];
+
+let snappedTiles = [];
+
 // let aiPlayer;
 let ball;
 // Monitors whether ball is currently in play
@@ -37,6 +42,7 @@ let targetForBall;
 let beepSound;
 let AnimationId;
 let refreshIntervalId;
+let refreshIntervalTileId;
 
 function SetupCanvas(){
 
@@ -67,7 +73,7 @@ function SetupCanvas(){
 
 
     // Draw player
-    player = new Player((canvas.width/2), 'blue');
+    player = new Player((canvas.width/2), 'white');
     Draw();
 
     spawnEnemies();
@@ -76,13 +82,13 @@ class Player {
 
     constructor(x=(canvas.width/2), color){
 
-        this.radius = 30;
+        this.radius = 20;
         this.color = color;
 
         // Center the player
         this.x = x;
         // place player half off the bottom screen
-        this.y = canvas.height;
+        this.y = canvas.height-55;
 
         // Will hold the increasing score
         this.score = 0;
@@ -95,7 +101,7 @@ class Player {
     draw(){
 
         c.beginPath();
-        c.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false);
+        c.arc(this.x, this.y, this.radius, 0, Math.PI, false);
         c.fillStyle = this.color;
         c.fill();
 
@@ -147,13 +153,11 @@ class Enemy {
         // place player half off the bottom screen
         this.y = y;
 
-        this.velocity = velocity;
-
         // Defines movement direction of paddles
         this.move = DIRECTION.STOPPED;
         // Defines how quickly paddles can be moved
 
-        this.speed = 8;
+        this.velocity = velocity;
         //console.log("Player created")
     }
     draw(){
@@ -172,13 +176,68 @@ class Enemy {
         this.y = this.y + this.velocity.y;
     }
 }
+class LoveTile {
+
+    constructor(x, y, velocity, color){
+
+        this.color = color;
+
+        // Center the player
+        this.x = x;
+        // place player half off the bottom screen
+        this.y = y;
+
+        this.width = 30;
+        this.height = 30;
+
+        this.velocity = velocity;
+
+        // Defines movement direction of paddles
+        this.move = DIRECTION.STOPPED;
+
+        // Defines how quickly paddles can be moved
+        this.velocity = velocity;
+        //console.log("Player created")
+
+        this.letter = generateString(1);
+
+        this.snapped = false;
+
+    }
+    draw(){
+
+        // c.beginPath();
+        // c.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false);
+        // c.fillStyle = this.color;
+        // c.fill();
+
+        c.fillStyle = this.color;
+        c.fillRect(this.x, this.y, this.width, this.height);
+        c.fill();
+        // draw font in red
+        c.fillStyle = "green";
+        c.font = "15pt sans-serif";
+        // c.fillText(this.letter, this.x, 100);
+        c.strokeText(this.letter, this.x+10, this.y+20);
+
+        // debug
+        // console.log(this);
+        // console.log("Player drawn")
+    }
+    update(){
+        if(!this.snapped) this.y = this.y + this.velocity.y;
+        
+    }
+}
 function Draw(){
 
     // Clear the canvas
     c.clearRect(0,0,canvas.width,canvas.height);
     // Draw Canvas background
-    c.fillStyle = 'black';
-    c.fillRect(0, 0, canvas.width, canvas.height);
+    // c.fillStyle = 'black';
+    // c.fillRect(0, 0, canvas.width, canvas.height);
+    c.fillStyle = 'rgb(0, 0, 0, 0.3)';
+    c.fillRect(0, 0, canvas.width, canvas.height)
 
     // Draw scores
     // Set font for scores
@@ -190,6 +249,35 @@ function Draw(){
     // Draw player
     player.draw();
     
+    // Draw love tiles
+    loveTiles.forEach((loveTile, tileIndex) => {
+
+        loveTile.update();
+        loveTile.draw();
+
+        // love tiles off the screen?
+        if ((loveTile.y - loveTile.height > canvas.height) && loveTile.snapped==false){
+            loveTiles.splice(tileIndex, 1);
+            // console.log(enemies);
+            return;
+        }
+        const dist = Math.hypot(loveTile.x - player.x, loveTile.y - player.y);
+
+        // any love tile vs player collision? scorePoints
+        if ((dist - loveTile.height  - player.radius) < 1 && loveTile.snapped==false){
+            // remove from screen
+            setTimeout(() => {
+
+                // loveTile.x = 0 + loveTile.width;
+                // loveTile.y = canvas.height - loveTile.height;
+                loveTile.snapped = true;
+                snappedTiles.push(loveTile);
+ 
+                console.log("Move tile to Love message!");
+            }, 0);   
+        }
+    });
+
     // Draw bullets
     bullets.forEach((bullet, bulletIndex) => {
 
@@ -198,8 +286,8 @@ function Draw(){
         
         // console.log("canvas height: " + canvas.height)
         // console.log("bullet posY: " + bullet.y)
-        console.log(bullets);
-        
+        // console.log(bullets);
+
         // bullets off the screen?
         if (bullet.y - bullet.radius < 0){
             bullets.splice(bulletIndex, 1);
@@ -208,7 +296,7 @@ function Draw(){
         
     });
 
-    // Draw bullets
+    // Draw enemies
     enemies.forEach((enemy, EnemyIndex) => {
 
         enemy.update();
@@ -246,13 +334,12 @@ function Draw(){
             // any enemy vs bullet collision? scorePoints
             if ((dist - enemy.radius  - bullet.radius) < 1){
 
-                // console.log("enemy.radius: " + enemy.radius);
-
+                // score only after we made it smaller
                 switch (true) {
-                    case (enemy.radius<=3):
+                    case (enemy.radius<=10):
                         player.score += 100;
                         break;
-                    case (enemy.radius>3 && enemy.radius<9):
+                    case (enemy.radius>10 && enemy.radius<25):
                         player.score += 20;
                         break;
                     default:
@@ -260,17 +347,36 @@ function Draw(){
                         break;
                 }
 
-                setTimeout(() => {
-                    // remove from screen
-                    enemies.splice(EnemyIndex, 1);
-                    bullets.splice(bulletIndex, 1);
+                // console.log(EnemyIndex + ": enemy.radius: " + enemy.radius);
+                if (enemy.radius > 15) {
+                    enemy.radus -= 1
+                    //setTimeout(() => {
+                        enemies.splice(EnemyIndex, 1);   
+                    //}, 0);
 
-                }, 0);
+                } else {
+
+                    // remove from screen
+                    setTimeout(() => {
+                        enemies.splice(EnemyIndex, 1);
+                        bullets.splice(bulletIndex, 1); 
+                    }, 0);   
+                }
+
             }
         })
 
     });
+    let tilePosX = 0;
+    tilePosX = 0;
 
+    snappedTiles.forEach((tile, tileIndex) => {
+
+        // loveTile.y = canvas.height - loveTile.height;
+        tilePosX += 25;
+        tile.x =  tilePosX
+        tile.y = canvas.height - tile.height;
+    });
     // Declare a winner (LE: does not apply to this game)
     // if(player.score === 5){
     //     c.fillText("Player Wins", canvas.width/2, 100);
@@ -353,22 +459,22 @@ function ShootIt(event){
             x: Math.cos(angle),
             y: Math.sin(angle)
         }
-        console.log("Coordinates: " + velocity.x + ", " + velocity.y);
+        // console.log("Coordinates: " + velocity.x + ", " + velocity.y);
 
     } else {
 
         var velocity = {
             x: 0,
-            y: -1
+            y: -5
         }
-        console.log("Coordinates: " + velocity.x + ", " + velocity.y);
+        // console.log("Coordinates: " + velocity.x + ", " + velocity.y);
     }
     
-    bullet = new Bullet(player.x, player.y, 3, 'white', velocity);
+    bullet = new Bullet(player.x, player.y, 5, 'white', velocity);
     bullets.push(bullet);
     bullet.draw();
+    // console.log(bullets);
 
-    console.log(bullets);
 }
 function StopPlayerPaddle(evt){
     player.move = DIRECTION.STOPPED;
@@ -389,6 +495,7 @@ function GameLoop(){
     if(gameOver){
 
         clearInterval(refreshIntervalId);
+        clearInterval(refreshIntervalTileId);
 
         c.font = '50px Arial';
         c.textAlign = 'center';
@@ -410,18 +517,49 @@ function SetRateVelocity(timestamp){
 }
 function spawnEnemies(){
 
+    // creating enemies
     refreshIntervalId = setInterval(() => {
 
         const x = Math.random() *  canvas.width;
         const y = 0 - player.radius;
-        const radius = (Math.random() * (15-4) + 4);
-        const color = 'green';
+        const radius = (Math.random() * (50-4) + 4);
+        const color = 'hsl(' + Math.random()*360 + ', 50%, 50%)';
         const velocity = {
             x: 1,
-            y: (Math.random() * 4)-1
+            y: ((Math.random() * 4) - 1)
         }
         enemies.push(new Enemy(x, y, radius, velocity, color));
+
         // console.log(enemies);
 
     }, 1000)
+
+    // creating love tiles
+    refreshIntervalTileId = setInterval(() => {
+
+        const x = Math.random() *  canvas.width;
+        const y = 0 - player.radius;
+        const velocity = {
+            x: 1,
+            y: ((Math.random() * 4) - 1)
+        }
+        loveTiles.push(new LoveTile(x, y, velocity, 'white'))
+
+        // console.log(enemies);
+
+    }, 2500)
+}
+
+// program to generate random strings
+// Article reference: https://www.programiz.com/javascript/examples/generate-random-strings
+// declare all characters
+const characters ='EUAMO';
+function generateString(length) {
+    let result = ' ';
+    const charactersLength = characters.length;
+    for ( let i = 0; i < length; i++ ) {
+        result += characters.charAt(Math.floor(Math.random() * charactersLength));
+    }
+
+    return result;
 }
