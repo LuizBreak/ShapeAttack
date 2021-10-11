@@ -21,6 +21,9 @@ let player;
 let bullet;
 const bullets = [];
 
+let enemy;
+const enemies = [];
+
 // let aiPlayer;
 let ball;
 // Monitors whether ball is currently in play
@@ -32,6 +35,8 @@ let delayAmount;
 let targetForBall;
 // Used to play sounds when paddle hits a ball
 let beepSound;
+let AnimationId;
+let refreshIntervalId;
 
 function SetupCanvas(){
 
@@ -51,16 +56,21 @@ function SetupCanvas(){
     document.addEventListener('keydown', MovePlayerPaddle);
     document.addEventListener('keyup', StopPlayerPaddle);
 
-    document.addEventListener('click', (event)=>{
-        // console.log(event);
+    // document.addEventListener('click', (event)=>{
+    //     ShootIt(event);
+    // });
+    
+    // LE: for testing purpose only. Not applicable to this game
+    // document.addEventListener('click', (event)=>{
+    //     ShootIt(event);
+    // });
 
-        ShootIt(event);
-
-    });
 
     // Draw player
     player = new Player((canvas.width/2), 'blue');
     Draw();
+
+    spawnEnemies();
 }
 class Player {
 
@@ -79,7 +89,8 @@ class Player {
         // Defines movement direction of paddles
         this.move = DIRECTION.STOPPED;
         // Defines how quickly paddles can be moved
-        this.speed = 11;
+        this.velocity = 5;
+        //console.log("Player created")
     }
     draw(){
 
@@ -90,7 +101,7 @@ class Player {
 
         // debug
         // console.log(this);
-        console.log("player created")
+        //console.log("Player drawn")
     }
 }
 class Bullet {
@@ -100,28 +111,64 @@ class Bullet {
         this.radius = radius;
         this.color = color;
 
-        // Center the player
         this.x = x;
-        // place player half off the bottom screen
         this.y = y;
 
         // Defines movement direction of paddles
         this.move = DIRECTION.STOPPED;
         // Defines how quickly paddles can be moved
         this.velocity = velocity;
+        console.log("Bullet created")
     }
     draw(){
         c.beginPath();
-        c.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false);
+        c.arc(this.x, this.y, this.radius, 0, Math.PI*2, false);
         c.fillStyle = this.color;
         c.fill();
 
         // debugs
         // console.log(this);
-        console.log("Bullet created")
+        //console.log("Bullet drawn")
     }
     update(){
-        this.x = this.x + this.velocity.x;
+        // this.x = this.x + this.velocity.x;
+        this.y = this.y + this.velocity.y;
+    }
+}
+class Enemy {
+
+    constructor(x, y, radius, velocity, color){
+
+        this.radius = radius;
+        this.color = color;
+
+        // Center the player
+        this.x = x;
+        // place player half off the bottom screen
+        this.y = y;
+
+        this.velocity = velocity;
+
+        // Defines movement direction of paddles
+        this.move = DIRECTION.STOPPED;
+        // Defines how quickly paddles can be moved
+
+        this.speed = 8;
+        //console.log("Player created")
+    }
+    draw(){
+
+        c.beginPath();
+        c.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false);
+        c.fillStyle = this.color;
+        c.fill();
+
+        // debug
+        // console.log(this);
+        // console.log("Player drawn")
+    }
+    update(){
+        // this.x = this.x + this.velocity.x;
         this.y = this.y + this.velocity.y;
     }
 }
@@ -135,20 +182,100 @@ function Draw(){
 
     // Draw scores
     // Set font for scores
-    c.font = '80px Arial';
+    c.font = '60px Arial';
     c.textAlign = 'center';
     c.fillStyle = "yellow";
-    c.fillText(player.score.toString(), (canvas.width/2), 100);
+    c.fillText(player.score.toString(), (canvas.width/2), 60);
 
-    // Draw Paddles
+    // Draw player
     player.draw();
-    // bullet.draw();
+    
+    // Draw bullets
+    bullets.forEach((bullet, bulletIndex) => {
 
-    // Declare a winner
-    if(player.score === 5){
-        c.fillText("Player Wins", canvas.width/2, 100);
-        gameOver = true;
-    }
+        bullet.update();
+        bullet.draw();
+        
+        // console.log("canvas height: " + canvas.height)
+        // console.log("bullet posY: " + bullet.y)
+        console.log(bullets);
+        
+        // bullets off the screen?
+        if (bullet.y - bullet.radius < 0){
+            bullets.splice(bulletIndex, 1);
+            return;
+        }
+        
+    });
+
+    // Draw bullets
+    enemies.forEach((enemy, EnemyIndex) => {
+
+        enemy.update();
+        enemy.draw();
+
+        // enemies off the screen?
+        if (enemy.y - enemy.radius > canvas.height){
+            enemies.splice(EnemyIndex, 1);
+            // console.log(enemies);
+            return;
+        }
+
+        const dist = Math.hypot(player.x-enemy.x, player.y-enemy.y);
+
+        // any enemy vs player collion? gameover!
+        if ((dist - enemy.radius  - player.radius) < 1){{
+        }
+            gameOver = true;
+            cancelAnimationFrame(AnimationId)
+            console.log("End the Game!")
+        }
+
+        bullets.forEach((bullet, bulletIndex) =>{
+            
+            // console.log("canvas height: " + canvas.height)
+
+            // // bullets off the screen?
+            // if (bullet.x - bullet.radius > canvas.height){
+            //     bullets.splice(bulletIndex, 1);
+            //     console.log(bullets);
+            //     return;
+            // }
+            const dist = Math.hypot(bullet.x - enemy.x, bullet.y - enemy.y);
+            // console.log(dist);
+            // any enemy vs bullet collision? scorePoints
+            if ((dist - enemy.radius  - bullet.radius) < 1){
+
+                // console.log("enemy.radius: " + enemy.radius);
+
+                switch (true) {
+                    case (enemy.radius<=3):
+                        player.score += 100;
+                        break;
+                    case (enemy.radius>3 && enemy.radius<9):
+                        player.score += 20;
+                        break;
+                    default:
+                        player.score += 5;
+                        break;
+                }
+
+                setTimeout(() => {
+                    // remove from screen
+                    enemies.splice(EnemyIndex, 1);
+                    bullets.splice(bulletIndex, 1);
+
+                }, 0);
+            }
+        })
+
+    });
+
+    // Declare a winner (LE: does not apply to this game)
+    // if(player.score === 5){
+    //     c.fillText("Player Wins", canvas.width/2, 100);
+    //     gameOver = true;
+    // }
 }
 function Update(){
 
@@ -164,22 +291,35 @@ function Update(){
 
     // sideway cases
     if(player.move === DIRECTION.RIGHT){
-        player.x += player.speed;
+        player.x += player.velocity;
     } else if(player.move === DIRECTION.LEFT){
-        player.x -= player.speed;
+        player.x -= player.velocity;
     }
-    bullet.update();
 
+    // If player tries to move off the board prevent that (LE: No need for this game)
+    // if(player.y < 0){
+    //     player.y = 0;
+    // } else if(player.y >= (canvas.height - player.height)){
+    //     player.y = canvas.height - player.height;
+    // }
+
+    //If player tries to move off the board prevent that
+    if(player.x < player.radius){
+        player.x = 0 + player.radius;
+    } else if(player.x >= (canvas.width - player.radius)){
+        player.x = canvas.width - player.radius;
+    }
 }
 // If we are not in play mode start the game running and loop
 // through updates and draws till the end of the game
 function MovePlayerPaddle(key){
+
     if(running === false){
         running = true;
         window.requestAnimationFrame(GameLoop);
     }
  
-    console.log("key: " + key.keyCode);
+    // console.log("key: " + key.keyCode);
 
     // Handle up arrow and w input
     if(key.keyCode === 38 || key.keyCode === 87) player.move = DIRECTION.UP;
@@ -193,30 +333,38 @@ function MovePlayerPaddle(key){
     
     // Handle space bar for shooting
     if(key.keyCode === 32) {
-        console.log("shoot!!");
+        // console.log("shoot!!");
+        ShootIt(null)
     }
     // handle scape as game over
     if(key.keyCode === 27) gameOver = true;
 }
- function ShootIt(event){
+function ShootIt(event){
 
-    const dy = event.clientY-player.y;
-    const dx = event.clientX-player.x;
+    if(event!=undefined)
+    {
+        const dy = event.clientY-player.y;
+        const dx = event.clientX-player.x;
     
-    // const angle = Math.atan2(
-    //     (event.clientY-player.y),
-    //     (event.clientX-player.x)
-    // );
+        const angle = Math.atan2(dy, dx);
+        // console.log(angle);
 
-    // const angle = Math.atan2(dy, dx) * 180  / Math.PI;
-    const angle = Math.atan2(dy, dx);
+        var velocity = {
+            x: Math.cos(angle),
+            y: Math.sin(angle)
+        }
+        console.log("Coordinates: " + velocity.x + ", " + velocity.y);
 
-    console.log(angle);
-    const velocity = {
-        x: Math.cos(angle),
-        y: Math.sin(angle)
+    } else {
+
+        var velocity = {
+            x: 0,
+            y: -1
+        }
+        console.log("Coordinates: " + velocity.x + ", " + velocity.y);
     }
-    bullet = new Bullet(player.x, player.y, 1, 'white', velocity);
+    
+    bullet = new Bullet(player.x, player.y, 3, 'white', velocity);
     bullets.push(bullet);
     bullet.draw();
 
@@ -229,34 +377,51 @@ function StopPlayerPaddle(evt){
 // while drawing them
 function GameLoop(){
 
-    console.log("GameLoop.enter");
+    // console.log("GameLoop.enter");
 
+    Update();
+    Draw();
 
-    //Update();
-    //Draw();
     // Keep looping
-    if(!gameOver) requestAnimationFrame(GameLoop);
+    if(!gameOver) AnimationId = requestAnimationFrame(GameLoop);
     // if(!gameOver) requestAnimationFrame(SetRateVelocity);
-    
-
-    bullets.forEach(projectile => {
-        projectile.update();
-        projectile.draw();
-    });
-
 
     if(gameOver){
+
+        clearInterval(refreshIntervalId);
+
         c.font = '50px Arial';
         c.textAlign = 'center';
         c.fillStyle = "red";
         c.fillText("Game Over!!!", (canvas.width/2), (canvas.height/2));
+        c.fillText("Score: " + player.score.toString(), (canvas.width/2), (canvas.height/2) + 50);
+
+        // enemies = null;
+        // bullets = null;
     }
 }
-// just to slow dows frame for better debuggin, 
-// however back to 60fps in production
+// LE: just to slow dows frame for better debugging, 
+//     however back to 60fps in production
 var fps = 60
 function SetRateVelocity(timestamp){
     setTimeout(function(){ //throttle requestAnimationFrame to 20fps
         requestAnimationFrame(GameLoop)
     }, 1000/fps)
+}
+function spawnEnemies(){
+
+    refreshIntervalId = setInterval(() => {
+
+        const x = Math.random() *  canvas.width;
+        const y = 0 - player.radius;
+        const radius = (Math.random() * (15-4) + 4);
+        const color = 'green';
+        const velocity = {
+            x: 1,
+            y: (Math.random() * 4)-1
+        }
+        enemies.push(new Enemy(x, y, radius, velocity, color));
+        // console.log(enemies);
+
+    }, 1000)
 }
