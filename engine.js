@@ -4,7 +4,7 @@ document.addEventListener('DOMContentLoaded', SetupCanvas);
 // Reference to the canvas element
 let canvas;
 // Context provides functions used for drawing and working with Canvas
-let c;
+let ctx;
  
 // Used to monitor whether paddles and ball are
 // moving and in what direction
@@ -27,7 +27,8 @@ const enemies = [];
 let loveTile;
 const loveTiles = [];
 
-let snappedTiles = [];
+// let snappedTiles = [];
+let loveMessage;
 
 // let aiPlayer;
 let ball;
@@ -40,6 +41,7 @@ let delayAmount;
 let targetForBall;
 // Used to play sounds when paddle hits a ball
 let beepSound;
+
 let AnimationId;
 let refreshIntervalId;
 let refreshIntervalTileId;
@@ -53,7 +55,7 @@ function SetupCanvas(){
 
     // Context provides functions used for drawing and 
     // working with Canvas
-    c = canvas.getContext('2d');
+    ctx = canvas.getContext('2d');
     
     canvas.width = innerWidth;
     canvas.height = innerHeight;
@@ -61,23 +63,23 @@ function SetupCanvas(){
     // Handle keyboard input
     document.addEventListener('keydown', MovePlayerPaddle);
     document.addEventListener('keyup', StopPlayerPaddle);
-
-    // document.addEventListener('click', (event)=>{
-    //     ShootIt(event);
-    // });
     
     // LE: for testing purpose only. Not applicable to this game
     // document.addEventListener('click', (event)=>{
     //     ShootIt(event);
     // });
 
-
     // Draw player
     player = new Player((canvas.width/2), 'white');
+    loveMessage = new LoveMessage("TEAMONEGOMIO");
+    // loveMessage.msgBannerArray = snappedTiles;
+
     Draw();
 
     spawnEnemies();
 }
+
+// game elements
 class Player {
 
     constructor(x=(canvas.width/2), color){
@@ -100,10 +102,10 @@ class Player {
     }
     draw(){
 
-        c.beginPath();
-        c.arc(this.x, this.y, this.radius, 0, Math.PI, false);
-        c.fillStyle = this.color;
-        c.fill();
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI, false);
+        ctx.fillStyle = this.color;
+        ctx.fill();
 
         // debug
         // console.log(this);
@@ -127,10 +129,10 @@ class Bullet {
         console.log("Bullet created")
     }
     draw(){
-        c.beginPath();
-        c.arc(this.x, this.y, this.radius, 0, Math.PI*2, false);
-        c.fillStyle = this.color;
-        c.fill();
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI*2, false);
+        ctx.fillStyle = this.color;
+        ctx.fill();
 
         // debugs
         // console.log(this);
@@ -162,10 +164,10 @@ class Enemy {
     }
     draw(){
 
-        c.beginPath();
-        c.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false);
-        c.fillStyle = this.color;
-        c.fill();
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false);
+        ctx.fillStyle = this.color;
+        ctx.fill();
 
         // debug
         // console.log(this);
@@ -211,14 +213,15 @@ class LoveTile {
         // c.fillStyle = this.color;
         // c.fill();
 
-        c.fillStyle = this.color;
-        c.fillRect(this.x, this.y, this.width, this.height);
-        c.fill();
+        ctx.fillStyle = this.color;
+        ctx.fillRect(this.x, this.y, this.width, this.height);
+        ctx.fill();
+
         // draw font in red
-        c.fillStyle = "green";
-        c.font = "15pt sans-serif";
+        ctx.fillStyle = 'rgba(0,0,255)'; // Legal;
+        ctx.font = "15pt sans-serif";
         // c.fillText(this.letter, this.x, 100);
-        c.strokeText(this.letter, this.x+10, this.y+20);
+        ctx.strokeText(this.letter, this.x+10, this.y+20);
 
         // debug
         // console.log(this);
@@ -229,22 +232,72 @@ class LoveTile {
         
     }
 }
+class LoveMessage{
+
+    constructor(message){
+        this.message = message;
+    }
+    msgTarget = []; // String.splice(this.message);
+    snappedTiles = [];
+
+    checkChar(char, indexedDB){
+        return true;
+    }
+    pushToBanner(char){
+        return true;
+    }
+    popFromBanner(char){
+        return true;
+    }
+    draw(){
+
+
+        //Draw banner
+        ctx.beginPath();
+        // ctx.fillStyle = 'rgba(255,255,255, 0.7)'; // Works partially. I would like it to be all white
+
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, canvas.height-30, 160 , 50)
+        ctx.stroke();
+        ctx.fill();
+
+        var gradient = ctx.createLinearGradient(0, 0, canvas.width, 0);
+        gradient.addColorStop("0", "magenta");
+        gradient.addColorStop("0.5", "blue");
+        gradient.addColorStop("1.0", "red");
+
+        // Fill with gradient
+        ctx.font = "20px Arial";
+        ctx.strokeStyle = gradient;
+        ctx.strokeText("Love Letter => ",90, canvas.height-8);
+
+        // Draw individual love tiles into banner
+        let tilePosX = 135;
+        for (let index = 0; index < this.snappedTiles.length; index++) {
+            const element = this.snappedTiles[index];
+            tilePosX += 25;
+            element.x =  tilePosX
+            element.y = canvas.height - element.height;
+        }
+    }
+}
 function Draw(){
 
     // Clear the canvas
-    c.clearRect(0,0,canvas.width,canvas.height);
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+
     // Draw Canvas background
     // c.fillStyle = 'black';
     // c.fillRect(0, 0, canvas.width, canvas.height);
-    c.fillStyle = 'rgb(0, 0, 0, 0.3)';
-    c.fillRect(0, 0, canvas.width, canvas.height)
+    ctx.fillStyle = 'rgb(0, 0, 0, 0.3)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height)
 
-    // Draw scores
+    // Draw score board
     // Set font for scores
-    c.font = '60px Arial';
-    c.textAlign = 'center';
-    c.fillStyle = "yellow";
-    c.fillText(player.score.toString(), (canvas.width/2), 60);
+    ctx.font = '60px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = "yellow";
+    ctx.fillText(player.score.toString(), (canvas.width/2), 60);
 
     // Draw player
     player.draw();
@@ -268,10 +321,10 @@ function Draw(){
             // remove from screen
             setTimeout(() => {
 
-                // loveTile.x = 0 + loveTile.width;
-                // loveTile.y = canvas.height - loveTile.height;
                 loveTile.snapped = true;
-                snappedTiles.push(loveTile);
+
+                // place love tile in the love message banner
+                loveMessage.snappedTiles.push(loveTile);
  
                 console.log("Move tile to Love message!");
             }, 0);   
@@ -349,10 +402,11 @@ function Draw(){
 
                 // console.log(EnemyIndex + ": enemy.radius: " + enemy.radius);
                 if (enemy.radius > 15) {
-                    enemy.radus -= 1
-                    //setTimeout(() => {
+                    // make it smaller gradually
+                    enemy.radus += 1
+                    setTimeout(() => {
                         enemies.splice(EnemyIndex, 1);   
-                    //}, 0);
+                    }, 0);
 
                 } else {
 
@@ -367,21 +421,17 @@ function Draw(){
         })
 
     });
-    let tilePosX = 0;
-    tilePosX = 0;
 
-    snappedTiles.forEach((tile, tileIndex) => {
-
-        // loveTile.y = canvas.height - loveTile.height;
-        tilePosX += 25;
-        tile.x =  tilePosX
-        tile.y = canvas.height - tile.height;
-    });
-    // Declare a winner (LE: does not apply to this game)
-    // if(player.score === 5){
-    //     c.fillText("Player Wins", canvas.width/2, 100);
-    //     gameOver = true;
+    // Draw love message into banner
+    // let tilePosX = 0;
+    // for (let index = 0; index < loveMessage.snappedTiles.length; index++) {
+    //     const element = loveMessage.snappedTiles[index];
+    //     tilePosX += 25;
+    //     element.x =  tilePosX
+    //     element.y = canvas.height - element.height;
     // }
+    // ctx.globalCompositeOperation='source-in';
+    loveMessage.draw();
 }
 function Update(){
 
@@ -497,11 +547,11 @@ function GameLoop(){
         clearInterval(refreshIntervalId);
         clearInterval(refreshIntervalTileId);
 
-        c.font = '50px Arial';
-        c.textAlign = 'center';
-        c.fillStyle = "red";
-        c.fillText("Game Over!!!", (canvas.width/2), (canvas.height/2));
-        c.fillText("Score: " + player.score.toString(), (canvas.width/2), (canvas.height/2) + 50);
+        ctx.font = '50px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = "red";
+        ctx.fillText("Game Over!!!", (canvas.width/2), (canvas.height/2));
+        ctx.fillText("Score: " + player.score.toString(), (canvas.width/2), (canvas.height/2) + 50);
 
         // enemies = null;
         // bullets = null;
@@ -549,11 +599,10 @@ function spawnEnemies(){
 
     }, 2500)
 }
-
 // program to generate random strings
 // Article reference: https://www.programiz.com/javascript/examples/generate-random-strings
 // declare all characters
-const characters ='EUAMO';
+const characters ='TEAMONEGOMIO';
 function generateString(length) {
     let result = ' ';
     const charactersLength = characters.length;
