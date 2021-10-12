@@ -46,6 +46,9 @@ let AnimationId;
 let refreshIntervalId;
 let refreshIntervalTileId;
 
+const targetLoveMessage ='TEAMONEGOMIO';
+// const targetLoveMessage ='MO'; LE: for test only
+
 function SetupCanvas(){
 
     console.log("SetupCanvas.enter")
@@ -71,7 +74,7 @@ function SetupCanvas(){
 
     // Draw player
     player = new Player((canvas.width/2), 'white');
-    loveMessage = new LoveMessage("TEAMONEGOMIO");
+    loveMessage = new LoveMessage(targetLoveMessage);
     // loveMessage.msgBannerArray = snappedTiles;
 
     Draw();
@@ -99,6 +102,8 @@ class Player {
         // Defines how quickly paddles can be moved
         this.velocity = 5;
         //console.log("Player created")
+        this.winner = false;
+
     }
     draw(){
 
@@ -126,7 +131,7 @@ class Bullet {
         this.move = DIRECTION.STOPPED;
         // Defines how quickly paddles can be moved
         this.velocity = velocity;
-        console.log("Bullet created")
+        // console.log("Bullet created")
     }
     draw(){
         ctx.beginPath();
@@ -234,23 +239,89 @@ class LoveTile {
 }
 class LoveMessage{
 
-    constructor(message){
-        this.message = message;
-    }
-    msgTarget = []; // String.splice(this.message);
-    snappedTiles = [];
+    constructor(loveMessage){
 
-    checkChar(char, indexedDB){
-        return true;
+        this.loveTargetMessage = loveMessage.split('');
+        this.snappedTiles = [];
+        this.isMsgCompleted = false;
     }
-    pushToBanner(char){
-        return true;
+
+
+    checkChar(char, index){
+
+        // when the SnappedTiles is empty then we need to assume this is 
+        // to be the first desired letter for the sequence
+        // if(index=-1) {
+        //     console.log("Tiles empty: reset index to 0")
+        //     index=0;
+
+        // }
+        
+        const targetLetter =  targetLoveMessage.split('');
+        //console.log(targetLetter);
+        console.log("Selected Letter: " + char + " targetLetter: " + targetLetter[index] + " Index: " + index)
+        //console.log('char.length ' + char.length + " targetLetter " + targetLetter[index].length)
+        if (char.trim() == targetLetter[index]){
+            // console.log(char + " was true. - checkChar");
+            return true;
+        } else {
+            // console.log(char + " was false. - checkChar");
+            return false;
+        }
     }
-    popFromBanner(char){
-        return true;
+    getUserLoveMessage(){
+        let userLoveMessage = "";
+        console.log("Snapped.length: " + this.snappedTiles.length)
+        for (let index = 0; index < this.snappedTiles.length; index++) {
+            let loveTile = this.snappedTiles[index];
+            userLoveMessage += loveTile.letter.trim();
+        }
+        console.log("UserMsg: " + userLoveMessage)
+        return userLoveMessage;
+    }
+    pushToBanner(loveTile){
+
+        let index = 0;
+        // if(this.snappedTiles.length != undefined){
+             index = this.snappedTiles.length;
+        // }
+        // console.log("snappedTiles.length: " + index)
+        // console.log("snappedTiles: " + this.snappedTiles)
+        // console.log(this.snappedTiles);
+
+        if(this.checkChar(loveTile.letter.trim(), index)){
+            // console.log('got here. checkChar=true');
+            this.snappedTiles.push(loveTile);
+            this.draw();
+
+            // console.log(loveTile)
+            // console.log(this.snappedTiles)
+            // console.log("Target.join - " + this.loveTargetMessage.join(''))
+            if(this.getUserLoveMessage() == this.loveTargetMessage.join('')){
+                this.isMsgCompleted = true;
+            }
+            
+            // if(JSON.stringify(this.snappedTiles)==JSON.stringify(this.loveTargetMessage)){
+            //     isCompleted = true;
+            // }
+            return true;
+        } else {
+            // console.log('got here. checkChar=false');
+            // console.log("false-> snappedTiles.length: " + this.snappedTiles.length)
+            return false;
+        }
+
+    }
+    popFromBanner(penalty){
+        console.log('penalty: ' + penalty + ' and snapped.length ' + this.snappedTiles.length)
+        for (let index = 0; index < penalty; index++) {
+            if(this.snappedTiles.length>0) {
+                console.log('just popped one tile out.')
+                this.snappedTiles.pop();
+            }
+        }
     }
     draw(){
-
 
         //Draw banner
         ctx.beginPath();
@@ -287,8 +358,6 @@ function Draw(){
     ctx.clearRect(0,0,canvas.width,canvas.height);
 
     // Draw Canvas background
-    // c.fillStyle = 'black';
-    // c.fillRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = 'rgb(0, 0, 0, 0.3)';
     ctx.fillRect(0, 0, canvas.width, canvas.height)
 
@@ -321,12 +390,25 @@ function Draw(){
             // remove from screen
             setTimeout(() => {
 
-                loveTile.snapped = true;
-
                 // place love tile in the love message banner
-                loveMessage.snappedTiles.push(loveTile);
- 
-                console.log("Move tile to Love message!");
+                if (loveMessage.pushToBanner(loveTile)){
+                    loveTile.snapped = true;
+                    console.log("Move tile to Love message banner!");
+                    if(loveMessage.isMsgCompleted){
+                        player.winner = true;
+                        gameOver = true;
+                        return
+                    } else {
+                        // does not receive any point, this is just your obligation
+                    }
+                } else {
+                    console.log('player.score -= 100 and PopIt');
+                    // wrong letter, deserves a penalty (points and remove one last letter from banner)
+                    player.score -= 1;
+                    loveMessage.popFromBanner(1);
+                    return
+                }
+
             }, 0);   
         }
     });
@@ -421,16 +503,7 @@ function Draw(){
         })
 
     });
-
-    // Draw love message into banner
-    // let tilePosX = 0;
-    // for (let index = 0; index < loveMessage.snappedTiles.length; index++) {
-    //     const element = loveMessage.snappedTiles[index];
-    //     tilePosX += 25;
-    //     element.x =  tilePosX
-    //     element.y = canvas.height - element.height;
-    // }
-    // ctx.globalCompositeOperation='source-in';
+    // Draw love banner
     loveMessage.draw();
 }
 function Update(){
@@ -539,18 +612,22 @@ function GameLoop(){
     Draw();
 
     // Keep looping
-    if(!gameOver) AnimationId = requestAnimationFrame(GameLoop);
-    // if(!gameOver) requestAnimationFrame(SetRateVelocity);
-
-    if(gameOver){
-
+    if(!gameOver) {
+        AnimationId = requestAnimationFrame(GameLoop);
+        // if(!gameOver) requestAnimationFrame(SetRateVelocity); LE: for testing purpose only (slow down the frames)
+    }  else {
+        // Finish the game
         clearInterval(refreshIntervalId);
         clearInterval(refreshIntervalTileId);
 
-        ctx.font = '50px Arial';
+        ctx.font = '30px Arial';
         ctx.textAlign = 'center';
         ctx.fillStyle = "red";
-        ctx.fillText("Game Over!!!", (canvas.width/2), (canvas.height/2));
+        if(player.winner){
+            ctx.fillText("CONGRATULATIONS!!! You Won!", (canvas.width/2), (canvas.height/2));
+        } else {
+            ctx.fillText("Sorry....Game Over!!!", (canvas.width/2), (canvas.height/2));
+        }
         ctx.fillText("Score: " + player.score.toString(), (canvas.width/2), (canvas.height/2) + 50);
 
         // enemies = null;
@@ -579,7 +656,6 @@ function spawnEnemies(){
             y: ((Math.random() * 4) - 1)
         }
         enemies.push(new Enemy(x, y, radius, velocity, color));
-
         // console.log(enemies);
 
     }, 1000)
@@ -593,21 +669,20 @@ function spawnEnemies(){
             x: 1,
             y: ((Math.random() * 4) - 1)
         }
-        loveTiles.push(new LoveTile(x, y, velocity, 'white'))
-
+        loveTiles.push(new LoveTile(x, y, velocity, 'yellow'))
         // console.log(enemies);
 
-    }, 2500)
+    }, 2000)
 }
 // program to generate random strings
 // Article reference: https://www.programiz.com/javascript/examples/generate-random-strings
 // declare all characters
-const characters ='TEAMONEGOMIO';
+
 function generateString(length) {
     let result = ' ';
-    const charactersLength = characters.length;
+    const charactersLength = targetLoveMessage.length;
     for ( let i = 0; i < length; i++ ) {
-        result += characters.charAt(Math.floor(Math.random() * charactersLength));
+        result += targetLoveMessage.charAt(Math.floor(Math.random() * charactersLength));
     }
 
     return result;
