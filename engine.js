@@ -46,8 +46,8 @@ let AnimationId;
 let refreshIntervalId;
 let refreshIntervalTileId;
 
-const targetLoveMessage ='TEAMONEGOMIO';
-// const targetLoveMessage ='MO'; LE: for test only
+//const targetLoveMessage ='TE-AMO-NEGO-MIO';
+const targetLoveMessage ='AMO'; // LE: for test only
 
 function SetupCanvas(){
 
@@ -547,8 +547,7 @@ function MovePlayerPaddle(key){
         running = true;
         window.requestAnimationFrame(GameLoop);
     }
- 
-    // console.log("key: " + key.keyCode);
+
 
     // Handle up arrow and w input
     if(key.keyCode === 38 || key.keyCode === 87) player.move = DIRECTION.UP;
