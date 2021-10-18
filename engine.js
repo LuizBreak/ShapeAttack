@@ -49,6 +49,9 @@ let AnimationId;
 let refreshIntervalId;
 let refreshIntervalTileId;
 
+// for particles color declaration
+let hue = 0;
+
 //const targetLoveMessage ='TE-AMO-NEGO-MIO';
 const targetLoveMessage ='AMO'; // LE: for test only
 
@@ -174,12 +177,9 @@ class Enemy {
         ctx.fillStyle = this.color;
         ctx.fill();
 
-        // debug
-        // console.log(this);
-        // console.log("Player drawn")
     }
     update(){
-        // this.x = this.x + this.velocity.x;
+        this.x = this.x + this.velocity.x;
         this.y = this.y + this.velocity.y;
     }
 }
@@ -188,7 +188,12 @@ class Particle {
     constructor(x, y, radius, velocity, color){
 
         this.radius = radius;
-        this.color = color;
+
+        // this is the raibow technique
+        this.color = 'hsl(' + (color) + ', 100%, 50%)';;
+        
+        // this is just the color of the enemy destroyed
+        // this.color = color;
 
         this.x = x;
         this.y = y;
@@ -198,14 +203,17 @@ class Particle {
     }
     draw(){
         ctx.save();
+        this.color = 'hsl(' + (hue) + ', 100%, 50%)';;
         canvas.globalAlpha = this.alpha;
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false);
-        ctx.fillStyle = this.color;
+        ctx.fillStyle = this.color
         ctx.fill();
         ctx.restore();
+        console.log('particles color: ' + this.color)
     }
     update(){
+        ctx.fillStyle = this.color;
         this.x = this.x + this.velocity.x;
         this.y = this.y + this.velocity.y;
         this.alpha -=  0.01;
@@ -383,11 +391,13 @@ class LoveMessage{
 function Draw(){
 
     // Clear the canvas
-    ctx.clearRect(0,0,canvas.width,canvas.height);
+    // ctx.clearRect(0,0,canvas.width,canvas.height);
 
     // Draw Canvas background
-    ctx.fillStyle = 'rgb(0, 0, 0, 0.3)';
+    // https://youtu.be/Yvz_axxWG4Y min 37 (opacity effect - Particle trails )
+    ctx.fillStyle = 'rgb(0, 0, 0, 0.1)';
     ctx.fillRect(0, 0, canvas.width, canvas.height)
+
 
     // Draw score board
     // Set font for scores
@@ -497,7 +507,7 @@ function Draw(){
             // bullets off the screen?
             if (bullet.y - bullet.radius < 0){
                 bullets.splice(bulletIndex, 1);
-                console.log(bullets);
+                // console.log(bullets);
                 return;
             }
 
@@ -505,7 +515,7 @@ function Draw(){
             // console.log(dist);
             // any enemy vs bullet collision? scorePoints
             if ((dist - enemy.radius  - bullet.radius) < 1){
-                console.log(bullet.x + ", " + bullet.y)
+                // console.log(bullet.x + ", " + bullet.y)
 
                 // splashIt(bullet, enemy.color);
 
@@ -554,6 +564,8 @@ function Draw(){
     loveMessage.draw();
 
     // Draw particles
+       
+    hue+=5;  // change particle colors
     particles.forEach((particle, particleIndex) => {
 
         if (particle.alpha <= 0) {
@@ -561,8 +573,8 @@ function Draw(){
             // let's make sure that does not happe
             particles.splice(particleIndex, 1)
         } else {
-            console.log("show particles on screeen")
-            console.log(particle);
+            // console.log("show particles on screeen")
+            // console.log(particle);
             particle.update();
             particle.draw();    
         }
@@ -714,7 +726,8 @@ function spawnDroppingElements(){
         const radius = (Math.random() * (50-4) + 4);
         const color = 'hsl(' + Math.random()*360 + ', 50%, 50%)';
         const velocity = {
-            x: 1,
+            x: 0, 
+            // TODO: Seek better diagonal patter for x velocity->  (Math.random()*2-1),
             y: ((Math.random() * 4) - 1)
         }
         enemies.push(new Enemy(x, y, radius, velocity, color));
@@ -786,7 +799,7 @@ function CircleCollisionDetection(circle1, circle2){
 // return true if the rectangle and circle are colliding
 function RectCircleColliding(circle, rect){
 
-    console.log("cicle: x-" + circle.x + " y-" + circle.y);
+    // console.log("cicle: x-" + circle.x + " y-" + circle.y);
 
     var distX = Math.abs(circle.x - rect.x-rect.w/2);
     var distY = Math.abs(circle.y - rect.y-rect.h/2);
@@ -960,7 +973,8 @@ function splashIt(bullet, color){
     // console.log("Boom - Enemy Splased!!!")
 
     for (let index = 0; index < 8; index++) {
-        particles.push(new Particle(bullet.x, bullet.y, bullet.radius, {x: Math.random()-0.5, y: Math.random()-0.5}, color))    
+        // particles.push(new Particle(bullet.x, bullet.y, bullet.radius, {x: Math.random()-0.5, y: Math.random()-0.5}, color))    
+        particles.push(new Particle(bullet.x, bullet.y, bullet.radius, {x: Math.random()*3-1.5, y: Math.random()*3-1.5}, hue))    
     }
     // console.log(particles)
 }
