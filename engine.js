@@ -33,27 +33,28 @@ const particles = [];
 // let snappedTiles = [];
 let loveMessage;
 
-// let aiPlayer;
-let ball;
 // Monitors whether ball is currently in play
 let running = false;
 let gameOver = false;
+
+// TBD: let aiPlayer;
+// let ball;
 // Will be used to add a delay before play resumes
-let delayAmount;
+// let delayAmount;
 // Should ball target player or AI
-let targetForBall;
+// let targetForBall;
 // Used to play sounds when paddle hits a ball
 let beepSound;
 
 let AnimationId;
-let refreshIntervalId;
+let refreshIntervalEnemiesId;
 let refreshIntervalTileId;
 
 // for particles color declaration
 let hue = 0;
 
 //const targetLoveMessage ='TE-AMO-NEGO-MIO';
-const targetLoveMessage ='AMO'; // LE: for test only
+const targetLoveMessage ='AMOR'; // LE: for test only
 
 function SetupCanvas(){
 
@@ -78,10 +79,8 @@ function SetupCanvas(){
     //     ShootIt(event);
     // });
 
-    // Draw player
     player = new Player((canvas.width/2), 'white');
     loveMessage = new LoveMessage(targetLoveMessage);
-    // loveMessage.msgBannerArray = snappedTiles;
 
     Draw();
 
@@ -95,7 +94,6 @@ class Player {
         this.radius = 20;
         this.color = color;
 
-        // Center the player
         this.x = x;
         this.y = canvas.height-55;
 
@@ -105,8 +103,9 @@ class Player {
         this.move = DIRECTION.STOPPED;
         // Defines how quickly paddles can be moved
         this.velocity = 5;
+
         //console.log("Player created")
-        this.winner = false;
+        // TBD this.winner = false;
 
     }
     draw(){
@@ -115,10 +114,6 @@ class Player {
         ctx.arc(this.x, this.y, this.radius, 0, Math.PI, false);
         ctx.fillStyle = this.color;
         ctx.fill();
-
-        // debug
-        // console.log(this);
-        //console.log("Player drawn")
     }
 }
 class Bullet {
@@ -132,20 +127,17 @@ class Bullet {
         this.y = y;
 
         // Defines movement direction of paddles
-        this.move = DIRECTION.STOPPED;
+        // TBDthis.move = DIRECTION.STOPPED;
+
         // Defines how quickly paddles can be moved
         this.velocity = velocity;
-        // console.log("Bullet created")
     }
     draw(){
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.radius, 0, Math.PI*2, false);
         ctx.fillStyle = this.color;
         ctx.fill();
-
-        // debugs
-        // console.log(this);
-        //console.log("Bullet drawn")
+        ctx.stroke();
     }
     update(){
         // this.x = this.x + this.velocity.x;
@@ -156,17 +148,18 @@ class Enemy {
 
     constructor(x, y, radius, velocity, color){
 
-        this.radius = radius;
-        this.color = color;
 
         this.x = x;
         this.y = y;
 
-        // Defines movement direction of paddles
-        this.move = DIRECTION.STOPPED;
+        this.radius = radius;
 
         // Defines how quickly paddles can be moved
         this.velocity = velocity;
+        this.color = color;
+
+        // Defines movement direction of paddles
+        // TBD: this.move = DIRECTION.STOPPED;
         
         this.wasGiant = radius;
     }
@@ -179,7 +172,7 @@ class Enemy {
 
     }
     update(){
-        this.x = this.x + this.velocity.x;
+        // this.x = this.x + this.velocity.x;
         this.y = this.y + this.velocity.y;
     }
 }
@@ -187,99 +180,111 @@ class Particle {
 
     constructor(x, y, radius, velocity, color){
 
+
+        this.x = x;
+        this.y = y;
+        
         this.radius = radius;
 
+
+        this.velocity = velocity;
+        
         // this is the raibow technique
         this.color = 'hsl(' + (color) + ', 100%, 50%)';;
         
         // this is just the color of the enemy destroyed
         // this.color = color;
 
-        this.x = x;
-        this.y = y;
-
-        this.velocity = velocity;
-        this.alpha = 1;
+        this.alpha = 1; // manage fadding away of particles
     }
     draw(){
+
         ctx.save();
+
         this.color = 'hsl(' + (hue) + ', 100%, 50%)';;
         canvas.globalAlpha = this.alpha;
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false);
         ctx.fillStyle = this.color
         ctx.fill();
+
         ctx.restore();
-        console.log('particles color: ' + this.color)
     }
     update(){
+
+        // causing rainbow effect
         ctx.fillStyle = this.color;
+        
         this.x = this.x + this.velocity.x;
         this.y = this.y + this.velocity.y;
+        
         this.alpha -=  0.01;
     }
 }
 class LoveTile {
 
-    constructor(x, y, velocity, color){
+    #width = 30;
+    #height = 30;
 
-        this.color = color;
+    constructor(x, y, velocity, bgColor, foreColor){
 
-        // Center the player
-        this.x = x;
-        // place player half off the bottom screen
-        this.y = y;
-
-        this.width = 30;
-        this.height = 30;
+        this.x = Math.floor(x);
+        this.y = Math.floor(y);
 
         this.velocity = velocity;
 
-        // Defines movement direction of paddles
-        this.move = DIRECTION.STOPPED;
-
-        // Defines how quickly paddles can be moved
-        this.velocity = velocity;
-        //console.log("Player created")
+        this.bgColor = bgColor;
+        this.foreColor = foreColor;
 
         this.letter = generateString(1);
-
         this.snapped = false;
-
     }
     draw(){
 
-        // c.beginPath();
-        // c.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false);
-        // c.fillStyle = this.color;
-        // c.fill();
+        console.log(this);
 
-        ctx.fillStyle = this.color;
-        ctx.fillRect(this.x, this.y, this.width, this.height);
-        ctx.fill();
+        ctx.save();
+        ctx.fillStyle = this.bgColor;
+        ctx.fillRect(this.x, this.y, this.#width, this.#height);
+        ctx.restore();
 
-        // draw font in red
-        ctx.fillStyle = 'rgba(0,0,255)'; // Legal;
+        ctx.save();
+        ctx.fillStyle = this.foreColor; // 'rgba(0,0,255)'; // Legal;
         ctx.font = "15pt sans-serif";
-        // c.fillText(this.letter, this.x, 100);
-        ctx.strokeText(this.letter, this.x+10, this.y+20);
 
-        // debug
-        // console.log(this);
-        // console.log("Player drawn")
+        // Article reference: https://www.w3schools.com/tags/canvas_textalign.asp
+        ctx.textAlign = "center";
+        ctx.fillText(this.letter,  this.x+12, this.y+23);
+        // ctx.strokeText(this.letter, this.x+12, this.y+23);
+        ctx.restore();
     }
     update(){
         if(!this.snapped) this.y = this.y + this.velocity.y;
-        
     }
 }
 class LoveMessage{
 
+    #tilePosX = 140;
+    #tilePosY = 30;
+
+    #messageDock = [];
+
     constructor(loveMessage){
 
         this.loveTargetMessage = loveMessage.split('');
+
         this.snappedTiles = [];
         this.isMsgCompleted = false;
+
+        // create message dock to help the user to know what the target message is
+        for (let index = 0; index < this.loveTargetMessage.length; index++) {
+
+            this.#tilePosX += 30;
+            const oTile =  new LoveTile(this.#tilePosX, canvas.height - this.#tilePosY, 0, 'black', 'yellow' ); // 
+            // const oTile =  new LoveTile(this.#tilePosX, canvas.height - this.#tilePosY, 0, 'rgb(0, 0, 0, 0.1)', 'yellow' ); // 
+            oTile.letter = this.loveTargetMessage[index];
+            this.#messageDock.push(oTile);
+        }
     }
 
 
@@ -306,7 +311,9 @@ class LoveMessage{
         }
     }
     getUserLoveMessage(){
+
         let userLoveMessage = "";
+
         // console.log("Snapped.length: " + this.snappedTiles.length)
         for (let index = 0; index < this.snappedTiles.length; index++) {
             let loveTile = this.snappedTiles[index];
@@ -317,9 +324,10 @@ class LoveMessage{
     }
     pushToBanner(loveTile){
 
-        let index = 0;
+        let index = this.snappedTiles.length;
+
         // if(this.snappedTiles.length != undefined){
-             index = this.snappedTiles.length;
+             // index = this.snappedTiles.length;
         // }
         // console.log("snappedTiles.length: " + index)
         // console.log("snappedTiles: " + this.snappedTiles)
@@ -352,7 +360,7 @@ class LoveMessage{
         // console.log('penalty: ' + penalty + ' and snapped.length ' + this.snappedTiles.length)
         for (let index = 0; index < penalty; index++) {
             if(this.snappedTiles.length>0) {
-                // console.log('just popped one tile out.')
+                console.log('just popped one tile out.')
                 this.snappedTiles.pop();
             }
         }
@@ -360,13 +368,16 @@ class LoveMessage{
     draw(){
 
         //Draw banner
+
+        ctx.save();
+
         ctx.beginPath();
         // ctx.fillStyle = 'rgba(255,255,255, 0.7)'; // Works partially. I would like it to be all white
 
         ctx.fillStyle = 'white';
         ctx.fillRect(0, canvas.height-30, 160 , 50)
-        ctx.stroke();
-        ctx.fill();
+        // ctx.stroke();
+        // ctx.fill();
 
         var gradient = ctx.createLinearGradient(0, 0, canvas.width, 0);
         gradient.addColorStop("0", "magenta");
@@ -376,15 +387,26 @@ class LoveMessage{
         // Fill with gradient
         ctx.font = "20px Arial";
         ctx.strokeStyle = gradient;
-        ctx.strokeText("Love Letter => ",90, canvas.height-8);
+        ctx.strokeText("Love Letter => ", 90, canvas.height-8);
+        ctx.restore();
 
-        // Draw individual love tiles into banner
-        let tilePosX = 135;
+        this.#ShowMessageDock();
+
+        // position individual love tiles into banner over the message dock
+        // let tilePosX = 140;
         for (let index = 0; index < this.snappedTiles.length; index++) {
             const element = this.snappedTiles[index];
-            tilePosX += 25;
-            element.x =  tilePosX
+            this.#tilePosX += 30;
+            element.x =  this.#tilePosX
             element.y = canvas.height - element.height;
+            // element.draw();
+        }
+    }
+    #ShowMessageDock(){
+
+        for (let index = 0; index < this.#messageDock.length; index++) {
+            const element = this.#messageDock[index];
+            element.draw();
         }
     }
 }
@@ -691,7 +713,7 @@ function GameLoop(){
         // if(!gameOver) requestAnimationFrame(SetRateVelocity); LE: for testing purpose only (slow down the frames)
     }  else {
         // Finish the game
-        clearInterval(refreshIntervalId);
+        clearInterval(refreshIntervalEnemiesId);
         clearInterval(refreshIntervalTileId);
 
         ctx.font = '30px Arial';
@@ -719,7 +741,7 @@ function SetRateVelocity(timestamp){
 function spawnDroppingElements(){
 
     // creating enemies
-    refreshIntervalId = setInterval(() => {
+    refreshIntervalEnemiesId = setInterval(() => {
 
         const x = Math.random() *  canvas.width;
         const y = 0 - player.radius;
@@ -735,16 +757,16 @@ function spawnDroppingElements(){
 
     }, 1000)
 
-    // creating love tiles
+    // creating dropping love tiles
     refreshIntervalTileId = setInterval(() => {
 
         const x = Math.random() *  canvas.width;
         const y = 0 - player.radius;
         const velocity = {
             x: 1,
-            y: ((Math.random() * 4) - 1)
+            y: (Math.random() * 4) - 1
         }
-        loveTiles.push(new LoveTile(x, y, velocity, 'yellow'))
+        loveTiles.push(new LoveTile(x, y, velocity, 'yellow', 'black'))
         // console.log(enemies);
 
     }, 2000)
