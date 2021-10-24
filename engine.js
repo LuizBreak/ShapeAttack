@@ -104,7 +104,7 @@ class Player {
         this.color = color;
 
         this.x = x;
-        this.y = canvas.height-this.radius;
+        this.y = canvas.height-this.radius-10;
 
         // Will hold the increasing score
         this.score = 0;
@@ -120,7 +120,7 @@ class Player {
     draw(){
 
         ctx.beginPath();
-        ctx.arc(this.x, this.y, this.radius, 0, Math.PI, true);
+        ctx.arc(this.x, this.y, this.radius, 0, 2*Math.PI, true);
         ctx.fillStyle = this.color;
         ctx.fill();
         ctx.stroke();
@@ -131,8 +131,8 @@ class Player {
     #drawImage(x, y){
 
         const spriteImg  = new Image();
-        spriteImg.src = './asset/sprite_0.png'
-        ctx.drawImage(spriteImg, 1, 1, 104, 124, x, y, 80, 80);
+        spriteImg.src = './asset/cupid-bow-smal.png'
+        ctx.drawImage(spriteImg, 1, 1, 104, 124, x-25 ,  y-20 ,  80, 80);
     }
 }
 class Bullet {
@@ -297,14 +297,11 @@ class LoveMessage{
         for (let index = 0; index < this.loveTargetMessage.length; index++) {
 
             this.#tilePosX += 30;
-            const oTile =  new LoveTile(this.#tilePosX, canvas.height - this.#tilePosY, 0, 'black', 'yellow' ); // 
-            // const oTile =  new LoveTile(this.#tilePosX, canvas.height - this.#tilePosY, 0, 'rgb(0, 0, 0, 0.1)', 'yellow' ); // 
+            const oTile =  new LoveTile(this.#tilePosX, canvas.height - this.#tilePosY, 0, 'black', 'yellow' );
             oTile.letter = this.loveTargetMessage[index];
             this.#messageDock.push(oTile);
         }
     }
-
-
     checkChar(char, index){
 
         // when the SnappedTiles is empty then we need to assume this is 
@@ -316,14 +313,14 @@ class LoveMessage{
         // }
         
         const targetLetter =  targetLoveMessage.split('');
-        //console.log(targetLetter);
+        // console.log(targetLetter);
         // console.log("Selected Letter: " + char + " targetLetter: " + targetLetter[index] + " Index: " + index)
-        //console.log('char.length ' + char.length + " targetLetter " + targetLetter[index].length)
+        // console.log('char.length ' + char.length + " targetLetter " + targetLetter[index].length)
         if (char.trim() == targetLetter[index]){
-            // console.log(char + " was true. - checkChar");
+            console.log(char + " was true. - checkChar");
             return true;
         } else {
-            // console.log(char + " was false. - checkChar");
+            console.log(char + " was false. - checkChar");
             return false;
         }
     }
@@ -346,9 +343,8 @@ class LoveMessage{
         // if(this.snappedTiles.length != undefined){
              // index = this.snappedTiles.length;
         // }
-        // console.log("snappedTiles.length: " + index)
+        console.log("snappedTiles.length: " + index)
         // console.log("snappedTiles: " + this.snappedTiles)
-        // console.log(this.snappedTiles);
 
         if(this.checkChar(loveTile.letter.trim(), index)){
             // console.log('got here. checkChar=true');
@@ -356,7 +352,7 @@ class LoveMessage{
             this.draw();
 
             // console.log(loveTile)
-            // console.log(this.snappedTiles)
+            console.log(this.snappedTiles)
             // console.log("Target.join - " + this.loveTargetMessage.join(''))
             if(this.getUserLoveMessage() == this.loveTargetMessage.join('')){
                 this.isMsgCompleted = true;
@@ -407,17 +403,20 @@ class LoveMessage{
         ctx.strokeText("Love Letter => ", 90, canvas.height-8);
         ctx.restore();
 
-        this.#ShowMessageDock();
-
         // position individual love tiles into banner over the message dock
-        // let tilePosX = 140;
+        console.log('snappedTiles.length' + this.snappedTiles.length)
+        this.#tilePosX = 140;
         for (let index = 0; index < this.snappedTiles.length; index++) {
             const element = this.snappedTiles[index];
             this.#tilePosX += 30;
             element.x =  this.#tilePosX
-            element.y = canvas.height - element.height;
+            element.y = canvas.height - element.height-15;
             // element.draw();
+            console.log(element);
+            console.log('love tile: (x, y, letter)' + element.x + ", " + element.y + ", " + element.letter)
         }
+        this.#ShowMessageDock();
+
     }
     #ShowMessageDock(){
 
@@ -593,6 +592,7 @@ function Draw(){
 
         // any love tile vs player collision? scorePoints
         if ((dist - loveTile.height  - player.radius) < 1 && loveTile.snapped==false){
+            // console.log('crashed with Love tile')
             // remove from screen
             setTimeout(() => {
 
@@ -899,7 +899,7 @@ function spawnDroppingElements(){
             x: 1,
             y: (Math.random() * 4) - 1
         }
-        loveTiles.push(new LoveTile(x, y, velocity, 'yellow', 'black'))
+        loveTiles.push(new LoveTile(x, y, velocity, 'white', 'black'))
         // console.log(loveTiles);
 
     }, 2000)
@@ -907,7 +907,6 @@ function spawnDroppingElements(){
 // program to generate random strings
 // Article reference: https://www.programiz.com/javascript/examples/generate-random-strings
 // declare all characters
-
 function generateString(length) {
     let result = ' ';
     const charactersLength = targetLoveMessage.length;
@@ -954,7 +953,7 @@ function CircleCollisionDetection(circle1, circle2){
 // return true if the rectangle and circle are colliding
 function xxRectCircleColliding(circle, rect){
 
-    console.log("cicle: x:" + circle.x + " y:" + circle.y + "rec: x:" + rect.x + " y:" + rect.y);
+    // console.log("cicle: x:" + circle.x + " y:" + circle.y + "rec: x:" + rect.x + " y:" + rect.y);
 
     var distX = Math.abs(circle.x - rect.x-rect.w/2);
     var distY = Math.abs(circle.y - rect.y-rect.h/2);
