@@ -104,7 +104,7 @@ class Player {
         this.color = color;
 
         this.x = x;
-        this.y = canvas.height-this.radius-10;
+        this.y = canvas.height-(this.radius*2);
 
         // Will hold the increasing score
         this.score = 0;
@@ -244,6 +244,7 @@ class LoveTile {
 
     width = 30;
     height = 30;
+    wasTouched = false;
 
     constructor(x, y, velocity, bgColor, foreColor){
 
@@ -297,7 +298,7 @@ class LoveMessage{
         for (let index = 0; index < this.loveTargetMessage.length; index++) {
 
             this.#tilePosX += 30;
-            const oTile =  new LoveTile(this.#tilePosX, canvas.height - this.#tilePosY, 0, 'black', 'yellow' );
+            const oTile =  new LoveTile(this.#tilePosX, canvas.height - this.#tilePosY, 0, 'transparent', 'white' );
             oTile.letter = this.loveTargetMessage[index];
             this.#messageDock.push(oTile);
         }
@@ -317,10 +318,10 @@ class LoveMessage{
         // console.log("Selected Letter: " + char + " targetLetter: " + targetLetter[index] + " Index: " + index)
         // console.log('char.length ' + char.length + " targetLetter " + targetLetter[index].length)
         if (char.trim() == targetLetter[index]){
-            console.log(char + " was true. - checkChar");
+            // console.log(char + " was true. - checkChar");
             return true;
         } else {
-            console.log(char + " was false. - checkChar");
+            // console.log(char + " was false. - checkChar");
             return false;
         }
     }
@@ -343,7 +344,7 @@ class LoveMessage{
         // if(this.snappedTiles.length != undefined){
              // index = this.snappedTiles.length;
         // }
-        console.log("snappedTiles.length: " + index)
+        // console.log("snappedTiles.length: " + index)
         // console.log("snappedTiles: " + this.snappedTiles)
 
         if(this.checkChar(loveTile.letter.trim(), index)){
@@ -370,18 +371,21 @@ class LoveMessage{
 
     }
     popFromBanner(penalty){
-        // console.log('penalty: ' + penalty + ' and snapped.length ' + this.snappedTiles.length)
+        console.log('penalty: ' + penalty + ' and snapped.length ' + this.snappedTiles.length)
         for (let index = 0; index < penalty; index++) {
+
             if(this.snappedTiles.length>0) {
-                //console.log('just popped one tile out.')
+                console.log(this.snappedTiles);
+                console.log('just popped one tile out.')
                 this.snappedTiles.pop();
+                console.log(this.snappedTiles);
             }
         }
     }
     draw(){
 
-        //Draw banner
 
+        //Draw banner
         ctx.save();
 
         ctx.beginPath();
@@ -389,8 +393,6 @@ class LoveMessage{
 
         ctx.fillStyle = 'white';
         ctx.fillRect(0, canvas.height-30, 160 , 50)
-        // ctx.stroke();
-        // ctx.fill();
 
         var gradient = ctx.createLinearGradient(0, 0, canvas.width, 0);
         gradient.addColorStop("0", "magenta");
@@ -403,17 +405,20 @@ class LoveMessage{
         ctx.strokeText("Love Letter => ", 90, canvas.height-8);
         ctx.restore();
 
+
+
         // position individual love tiles into banner over the message dock
-        console.log('snappedTiles.length' + this.snappedTiles.length)
+        // console.log('snappedTiles.length' + this.snappedTiles.length)
         this.#tilePosX = 140;
         for (let index = 0; index < this.snappedTiles.length; index++) {
             const element = this.snappedTiles[index];
             this.#tilePosX += 30;
             element.x =  this.#tilePosX
-            element.y = canvas.height - element.height-15;
+            element.y = canvas.height - element.height;
+            // console.log('draw it now')
             // element.draw();
-            console.log(element);
-            console.log('love tile: (x, y, letter)' + element.x + ", " + element.y + ", " + element.letter)
+            // console.log(element);
+            // console.log('love tile: (x, y, letter)' + element.x + ", " + element.y + ", " + element.letter)
         }
         this.#ShowMessageDock();
 
@@ -422,6 +427,7 @@ class LoveMessage{
 
         for (let index = 0; index < this.#messageDock.length; index++) {
             const element = this.#messageDock[index];
+            console.log('Draw Message Dock it now')
             element.draw();
         }
     }
@@ -587,36 +593,44 @@ function Draw(){
         //     oGameOver.play();
         // }
 
-        const dist = Math.hypot(loveTile.x - player.x, loveTile.y - player.y);
-        // console.log('dist: ' + dist) + ' x: ' + loveTile.x  + ', y: ' + loveTile.y;
 
-        // any love tile vs player collision? scorePoints
-        if ((dist - loveTile.height  - player.radius) < 1 && loveTile.snapped==false){
-            // console.log('crashed with Love tile')
-            // remove from screen
-            setTimeout(() => {
+        if(!loveTile.wasTouched)
+        {            
+            const dist = Math.hypot(loveTile.x - player.x, loveTile.y - player.y);
+            // console.log('dist: ' + dist) + ' x: ' + loveTile.x  + ', y: ' + loveTile.y;
 
-                // place love tile in the love message banner
-                if (loveMessage.pushToBanner(loveTile)){
-                    loveTile.snapped = true;
-                    console.log("Move tile to Love message banner!");
-                    if(loveMessage.isMsgCompleted){
-                        player.winner = true;
-                        gameOver = true;
-                        return
+            // any love tile vs player collision? scorePoints
+            if ((dist - loveTile.height  - player.radius) < 1 && loveTile.snapped==false){
+                // console.log('crashed with Love tile')
+                // remove from screen
+
+                setTimeout(() => {
+                    // place love tile in the love message banner
+                    if (loveMessage.pushToBanner(loveTile)){
+                        loveTile.snapped = true;
+                        loveTile.touched = true;
+                        // console.log("Move tile to Love message banner!");
+                        if(loveMessage.isMsgCompleted){
+                            player.winner = true;
+                            gameOver = true;
+                            return
+                        } else {
+                            // does not receive any point, this is just your obligation
+                        }
                     } else {
-                        // does not receive any point, this is just your obligation
+                        // wrong letter, deserves a penalty (points and remove one last letter from banner)
+                        if(!loveTile.touched) {
+                            console.log('player.score -= 1 and PopIt');
+                            player.score -= 1;
+                            loveMessage.popFromBanner(1);
+                            loveTile.touched = true;
+                        }
                     }
-                } else {
-                    // console.log('player.score -= 100 and PopIt');
-                    // wrong letter, deserves a penalty (points and remove one last letter from banner)
-                    player.score -= 1;
-                    loveMessage.popFromBanner(1);
-                    return
-                }
 
-            }, 0);   
+                }, 0);   
+            }
         }
+
     });
 
     // Draw bullets
