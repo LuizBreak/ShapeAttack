@@ -30,20 +30,13 @@ const loveTiles = [];
 let particle;
 const particles = [];
 
-// let snappedTiles = [];
+
 let loveMessage;
 
 // Monitors whether ball is currently in play
 let running = false;
 let gameOver = false;
 
-// TBD: let aiPlayer;
-// let ball;
-// Will be used to add a delay before play resumes
-// let delayAmount;
-// Should ball target player or AI
-// let targetForBall;
-// Used to play sounds when paddle hits a ball
 let beepSound;
 
 let oShoot;
@@ -55,10 +48,10 @@ let AnimationId;
 let refreshIntervalEnemiesId;
 let refreshIntervalTileId;
 
-// for particles color declaration
+// for particles color declaration / fading away logic
 let hue = 0;
 
-//const targetLoveMessage ='TE-AMO-NEGO-MIO';
+// const targetLoveMessage ='TE-AMO-NEGO-MIO';
 const targetLoveMessage ='AMOR'; // LE: for test only
 
 function SetupCanvas(){
@@ -68,8 +61,7 @@ function SetupCanvas(){
     // Reference to the canvas element
     canvas = document.querySelector("canvas");
 
-    // Context provides functions used for drawing and 
-    // working with Canvas
+    // Context provides functions used for drawing and  working with Canvas
     ctx = canvas.getContext('2d');
     
     canvas.width = 620;
@@ -82,11 +74,6 @@ function SetupCanvas(){
     oShoot = new SoundPlayer('beepSound1', "asset/beep.wav");
     oExplode = new SoundPlayer('beepSound2', "asset/jump.mp3");
     oGameOver = new SoundPlayer('beepSound3', "asset/mario-bros-die.mp3");
-
-    // LE: for testing purpose only. Not applicable to this game
-    // document.addEventListener('click', (event)=>{
-    //     ShootIt(event);
-    // });
 
     player = new Player((canvas.width/2), 'white');
     loveMessage = new LoveMessage(targetLoveMessage);
@@ -106,7 +93,6 @@ class Player {
         this.x = x;
         this.y = canvas.height-(this.radius*2);
 
-        // Will hold the increasing score
         this.score = 0;
         // Defines movement direction of paddles
         this.move = DIRECTION.STOPPED;
@@ -145,10 +131,6 @@ class Bullet {
         this.x = x;
         this.y = y;
 
-        // Defines movement direction of paddles
-        // TBDthis.move = DIRECTION.STOPPED;
-
-        // Defines how quickly paddles can be moved
         this.velocity = velocity;
     }
     draw(){
@@ -167,18 +149,13 @@ class Enemy {
 
     constructor(x, y, radius, velocity, color){
 
-
         this.x = x;
         this.y = y;
 
         this.radius = radius;
 
-        // Defines how quickly paddles can be moved
         this.velocity = velocity;
         this.color = color;
-
-        // Defines movement direction of paddles
-        // TBD: this.move = DIRECTION.STOPPED;
         
         this.wasGiant = radius;
     }
@@ -199,7 +176,6 @@ class Particle {
 
     constructor(x, y, radius, velocity, color){
 
-
         this.x = x;
         this.y = y;
         
@@ -210,9 +186,6 @@ class Particle {
         
         // this is the raibow technique
         this.color = 'hsl(' + (color) + ', 100%, 50%)';;
-        
-        // this is just the color of the enemy destroyed
-        // this.color = color;
 
         this.alpha = 1; // manage fadding away of particles
     }
@@ -267,7 +240,7 @@ class LoveTile {
         ctx.restore();
 
         ctx.save();
-        ctx.fillStyle = this.foreColor; // 'rgba(0,0,255)'; // Legal;
+        ctx.fillStyle = this.foreColor;
         ctx.font = "15pt sans-serif";
 
         // Article reference: https://www.w3schools.com/tags/canvas_textalign.asp
@@ -298,30 +271,18 @@ class LoveMessage{
         for (let index = 0; index < this.loveTargetMessage.length; index++) {
 
             this.#tilePosX += 30;
-            const oTile =  new LoveTile(this.#tilePosX, canvas.height - this.#tilePosY, 0, 'transparent', 'white' );
+            const oTile =  new LoveTile(this.#tilePosX, canvas.height - this.#tilePosY, 0, 'black', 'white' );
             oTile.letter = this.loveTargetMessage[index];
             this.#messageDock.push(oTile);
         }
     }
     checkChar(char, index){
-
-        // when the SnappedTiles is empty then we need to assume this is 
-        // to be the first desired letter for the sequence
-        // if(index=-1) {
-        //     console.log("Tiles empty: reset index to 0")
-        //     index=0;
-
-        // }
         
         const targetLetter =  targetLoveMessage.split('');
-        // console.log(targetLetter);
         // console.log("Selected Letter: " + char + " targetLetter: " + targetLetter[index] + " Index: " + index)
-        // console.log('char.length ' + char.length + " targetLetter " + targetLetter[index].length)
         if (char.trim() == targetLetter[index]){
-            // console.log(char + " was true. - checkChar");
             return true;
         } else {
-            // console.log(char + " was false. - checkChar");
             return false;
         }
     }
@@ -329,7 +290,6 @@ class LoveMessage{
 
         let userLoveMessage = "";
 
-        // console.log("Snapped.length: " + this.snappedTiles.length)
         for (let index = 0; index < this.snappedTiles.length; index++) {
             let loveTile = this.snappedTiles[index];
             userLoveMessage += loveTile.letter.trim();
@@ -341,14 +301,7 @@ class LoveMessage{
 
         let index = this.snappedTiles.length;
 
-        // if(this.snappedTiles.length != undefined){
-             // index = this.snappedTiles.length;
-        // }
-        // console.log("snappedTiles.length: " + index)
-        // console.log("snappedTiles: " + this.snappedTiles)
-
         if(this.checkChar(loveTile.letter.trim(), index)){
-            // console.log('got here. checkChar=true');
             this.snappedTiles.push(loveTile);
             this.draw();
 
@@ -358,25 +311,24 @@ class LoveMessage{
             if(this.getUserLoveMessage() == this.loveTargetMessage.join('')){
                 this.isMsgCompleted = true;
             }
-            
-            // if(JSON.stringify(this.snappedTiles)==JSON.stringify(this.loveTargetMessage)){
-            //     isCompleted = true;
-            // }
             return true;
         } else {
-            // console.log('got here. checkChar=false');
             // console.log("false-> snappedTiles.length: " + this.snappedTiles.length)
             return false;
         }
 
     }
     popFromBanner(penalty){
-        console.log('penalty: ' + penalty + ' and snapped.length ' + this.snappedTiles.length)
+        // console.log('penalty: ' + penalty + ' and snapped.length ' + this.snappedTiles.length)
         for (let index = 0; index < penalty; index++) {
 
             if(this.snappedTiles.length>0) {
+
                 console.log(this.snappedTiles);
                 console.log('just popped one tile out.')
+                const element = this.snappedTiles[this.snappedTiles.length-1];
+                ctx.clearRect(element.x, element.y, element.width, element.height);
+
                 this.snappedTiles.pop();
                 console.log(this.snappedTiles);
             }
@@ -406,6 +358,7 @@ class LoveMessage{
         ctx.restore();
 
 
+        this.#ShowMessageDock();
 
         // position individual love tiles into banner over the message dock
         // console.log('snappedTiles.length' + this.snappedTiles.length)
@@ -416,11 +369,11 @@ class LoveMessage{
             element.x =  this.#tilePosX
             element.y = canvas.height - element.height;
             // console.log('draw it now')
-            // element.draw();
+            element.draw();
             // console.log(element);
             // console.log('love tile: (x, y, letter)' + element.x + ", " + element.y + ", " + element.letter)
         }
-        this.#ShowMessageDock();
+
 
     }
     #ShowMessageDock(){
@@ -536,7 +489,6 @@ class MessageBox{
         ctx.stroke();
         
         ctx.closePath();
-        // console.log("MessageBox: -> x: " + this.x + " y: " + this.y + " Width: " + this.wWith + " Height: " + this.wHeight);
 
         ctx.fillStyle = this.foreColor;
         ctx.font = this.font
@@ -587,13 +539,6 @@ function Draw(){
             return;
         }
 
-        // console.log('Collision: ' + RectCircleColliding(loveTile, player));
-        // if(RectCircleColliding(loveTile, player)){
-        //     console.log("Boom!!! Circle & Rec Collided")
-        //     oGameOver.play();
-        // }
-
-
         if(!loveTile.wasTouched)
         {            
             const dist = Math.hypot(loveTile.x - player.x, loveTile.y - player.y);
@@ -605,7 +550,7 @@ function Draw(){
                 // remove from screen
 
                 setTimeout(() => {
-                    // place love tile in the love message banner
+                    // place love tile in the love message banner if it matches letter
                     if (loveMessage.pushToBanner(loveTile)){
                         loveTile.snapped = true;
                         loveTile.touched = true;
@@ -619,12 +564,10 @@ function Draw(){
                         }
                     } else {
                         // wrong letter, deserves a penalty (points and remove one last letter from banner)
-                        if(!loveTile.touched) {
-                            console.log('player.score -= 1 and PopIt');
-                            player.score -= 1;
-                            loveMessage.popFromBanner(1);
-                            loveTile.touched = true;
-                        }
+                        console.log('player.score -= 1 and PopIt');
+                        player.score -= 1;
+                        loveMessage.popFromBanner(1);
+                        loveTile.touched = true;
                     }
 
                 }, 0);   
@@ -638,10 +581,6 @@ function Draw(){
 
         bullet.update();
         bullet.draw();
-        
-        // console.log("canvas height: " + canvas.height)
-        // console.log("bullet posY: " + bullet.y)
-        // console.log(bullets);
 
         // bullets off the screen?
         if (bullet.y - bullet.radius < 0){
@@ -660,7 +599,6 @@ function Draw(){
         // enemies off the screen?
         if (enemy.y - enemy.radius > canvas.height){
             enemies.splice(EnemyIndex, 1);
-            // console.log(enemies);
             return;
         }
 
@@ -670,28 +608,22 @@ function Draw(){
         if ((dist - enemy.radius  - player.radius) < 1){{
         }
             gameOver = true;
-            // console.log("End the Game!")
         }
 
         // any enemy vs bullet collision? Explode them
         bullets.forEach((bullet, bulletIndex) =>{
-            
-            // console.log("canvas height: " + canvas.height)
 
             // bullets off the screen?
             if (bullet.y - bullet.radius < 0){
                 bullets.splice(bulletIndex, 1);
-                // console.log(bullets);
                 return;
             }
 
             const dist = Math.hypot(bullet.x - enemy.x, bullet.y - enemy.y);
-            // console.log(dist);
+
             // any enemy vs bullet collision? scorePoints
             if ((dist - enemy.radius  - bullet.radius) < 1){
-                // console.log(bullet.x + ", " + bullet.y)
 
-                // splashIt(bullet, enemy.color);
                 oExplode.play();
 
                 // score only after we made it smaller
@@ -707,7 +639,6 @@ function Draw(){
                         break;
                 }
 
-                // console.log(EnemyIndex + ": enemy.radius: " + enemy.radius);
                 if (enemy.radius > 30) {
                     // make it smaller gradually Library: https://cdnjs.com/libraries/gsap
                     gsap.to(enemy, {
@@ -723,8 +654,6 @@ function Draw(){
 
                     // remove from screen
                     setTimeout(() => {
-                        // if(enemy.wasGiant>30) 
-                        // splashIt(bullet, enemy.color);
                         enemies.splice(EnemyIndex, 1);
                         bullets.splice(bulletIndex, 1); 
                     }, 0);   
@@ -738,8 +667,7 @@ function Draw(){
     // Draw love banner
     loveMessage.draw();
 
-    // Draw particles
-       
+    // Draw particles  
     hue+=5;  // change particle colors
     particles.forEach((particle, particleIndex) => {
 
@@ -748,8 +676,6 @@ function Draw(){
             // let's make sure that does not happe
             particles.splice(particleIndex, 1)
         } else {
-            // console.log("show particles on screeen")
-            // console.log(particle);
             particle.update();
             particle.draw();    
         }
@@ -820,9 +746,6 @@ function ShootIt(event){
 
     if(event!=undefined)
     {
-        // used for shooting toward clicks events
-        const dy = event.clientY-player.y;
-        const dx = event.clientX-player.x;
     
         const angle = Math.atan2(dy, dx);
         // console.log(angle);
@@ -831,7 +754,6 @@ function ShootIt(event){
             x: Math.cos(angle),
             y: Math.sin(angle)
         }
-        // console.log("Coordinates: " + velocity.x + ", " + velocity.y);
 
     } else {
 
@@ -846,11 +768,7 @@ function ShootIt(event){
     bullets.push(bullet);
     bullet.draw();
     oShoot.play()
-    // console.log(bullets);
 
-}
-function StopPlayerPaddle(evt){
-    player.move = DIRECTION.STOPPED;
 }
 // Loops constantly updating position of assets 
 // while drawing them
@@ -885,6 +803,10 @@ function SetRateVelocity(timestamp){
         requestAnimationFrame(GameLoop)
     }, 1000/fps)
 }
+function StopPlayerPaddle(){
+    player.move = DIRECTION.STOPPED;
+
+}
 function spawnDroppingElements(){
 
     // creating enemies
@@ -900,7 +822,6 @@ function spawnDroppingElements(){
             y: ((Math.random() * 4) - 1)
         }
         enemies.push(new Enemy(x, y, radius, velocity, color));
-        // console.log(enemies);
 
     }, 1000)
 
@@ -914,7 +835,6 @@ function spawnDroppingElements(){
             y: (Math.random() * 4) - 1
         }
         loveTiles.push(new LoveTile(x, y, velocity, 'white', 'black'))
-        // console.log(loveTiles);
 
     }, 2000)
 }
@@ -963,178 +883,6 @@ function CircleCollisionDetection(circle1, circle2){
         // this.color = "blue";
         return false;
     }
-}
-// return true if the rectangle and circle are colliding
-function xxRectCircleColliding(circle, rect){
-
-    // console.log("cicle: x:" + circle.x + " y:" + circle.y + "rec: x:" + rect.x + " y:" + rect.y);
-
-    var distX = Math.abs(circle.x - rect.x-rect.w/2);
-    var distY = Math.abs(circle.y - rect.y-rect.h/2);
-
-    if (distX > (rect.w/2 + circle.r)) { return false; }
-    if (distY > (rect.h/2 + circle.r)) { return false; }
-
-    if (distX <= (rect.w/2)) { return true; } 
-    if (distY <= (rect.h/2)) { return true; }
-
-    var dx=distX-rect.w/2;
-    var dy=distY-rect.h/2;
-    return (dx*dx+dy*dy<=(circle.r*circle.r));
-}
-function OriginalDraw(){
-
-    // Clear the canvas
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-
-    // Draw Canvas background
-    ctx.fillStyle = 'rgb(0, 0, 0, 0.3)';
-    ctx.fillRect(0, 0, canvas.width, canvas.height)
-
-    // Draw score board
-    // Set font for scores
-    ctx.font = '60px Arial';
-    ctx.textAlign = 'center';
-    ctx.fillStyle = "yellow";
-    ctx.fillText(player.score.toString(), (canvas.width/2), 60);
-
-    // Draw player
-    player.draw();
-    
-    // Draw love tiles
-    loveTiles.forEach((loveTile, tileIndex) => {
-
-        loveTile.update();
-        loveTile.draw();
-
-        // love tiles off the screen?
-        if ((loveTile.y - loveTile.height > canvas.height) && loveTile.snapped==false){
-            loveTiles.splice(tileIndex, 1);
-            // console.log(enemies);
-            return;
-        }
-        const dist = Math.hypot(loveTile.x - player.x, loveTile.y - player.y);
-
-        // any love tile vs player collision? scorePoints
-        if ((dist - loveTile.height  - player.radius) < 1 && loveTile.snapped==false){
-            // remove from screen
-            setTimeout(() => {
-
-                // place love tile in the love message banner
-                if (loveMessage.pushToBanner(loveTile)){
-                    loveTile.snapped = true;
-                    // console.log("Move tile to Love message banner!");
-                    if(loveMessage.isMsgCompleted){
-                        player.winner = true;
-                        gameOver = true;
-                        return
-                    } else {
-                        // does not receive any point, this is just your obligation
-                    }
-                } else {
-                    // console.log('player.score -= 100 and PopIt');
-                    // wrong letter, deserves a penalty (points and remove one last letter from banner)
-                    player.score -= 1;
-                    loveMessage.popFromBanner(1);
-                    return
-                }
-
-            }, 0);   
-        }
-    });
-
-    // Draw bullets
-    bullets.forEach((bullet, bulletIndex) => {
-
-        bullet.update();
-        bullet.draw();
-        
-        // console.log("canvas height: " + canvas.height)
-        // console.log("bullet posY: " + bullet.y)
-        // console.log(bullets);
-
-        // bullets off the screen?
-        if (bullet.y - bullet.radius < 0){
-            bullets.splice(bulletIndex, 1);
-            return;
-        }
-        
-    });
-
-    // Draw enemies
-    enemies.forEach((enemy, EnemyIndex) => {
-
-        enemy.update();
-        enemy.draw();
-
-        // enemies off the screen?
-        if (enemy.y - enemy.radius > canvas.height){
-            enemies.splice(EnemyIndex, 1);
-            // console.log(enemies);
-            return;
-        }
-
-        const dist = Math.hypot(player.x-enemy.x, player.y-enemy.y);
-
-        // any enemy vs player collion? gameover!
-        if ((dist - enemy.radius  - player.radius) < 1){{
-        }
-            gameOver = true;
-            cancelAnimationFrame(AnimationId)
-            // console.log("End the Game!")
-        }
-
-        bullets.forEach((bullet, bulletIndex) =>{
-            
-            // console.log("canvas height: " + canvas.height)
-
-            // // bullets off the screen?
-            // if (bullet.x - bullet.radius > canvas.height){
-            //     bullets.splice(bulletIndex, 1);
-            //     console.log(bullets);
-            //     return;
-            // }
-            const dist = Math.hypot(bullet.x - enemy.x, bullet.y - enemy.y);
-            // console.log(dist);
-            // any enemy vs bullet collision? scorePoints
-            if ((dist - enemy.radius  - bullet.radius) < 1){
-
-                // score only after we made it smaller
-                switch (true) {
-                    case (enemy.radius<=10):
-                        player.score += 100;
-                        break;
-                    case (enemy.radius>10 && enemy.radius<25):
-                        player.score += 20;
-                        break;
-                    default:
-                        player.score += 5;
-                        break;
-                }
-
-                // console.log(EnemyIndex + ": enemy.radius: " + enemy.radius);
-                if (enemy.radius > 15) {
-                    // make it smaller gradually
-                    enemy.radus += 1
-                    setTimeout(() => {
-                        enemies.splice(EnemyIndex, 1);   
-                    }, 0);
-
-                } else {
-
-                    // remove from screen
-                    setTimeout(() => {
-                        enemies.splice(EnemyIndex, 1);
-                        bullets.splice(bulletIndex, 1); 
-                    }, 0);   
-                }
-
-            }
-        })
-
-    });
-    // Draw love banner
-    loveMessage.draw();
 }
 function splashIt(bullet, color){
 
